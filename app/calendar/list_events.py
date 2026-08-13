@@ -1,10 +1,9 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 
 from app.payment.models import Lesson
 
@@ -18,6 +17,7 @@ SCOPES = [
 
 MOSCOW_TIMEZONE = ZoneInfo("Europe/Moscow")
 CALENDAR_ID = "gnog94n7jvjnq15ha5dktnks7c@group.calendar.google.com"
+
 
 def get_credentials() -> Credentials:
     if TOKEN_FILE.exists():
@@ -35,11 +35,13 @@ def get_credentials() -> Credentials:
 
     return credentials
 
-def get_today_events(service) -> list[dict]:
-    now = datetime.now(MOSCOW_TIMEZONE)
 
+def get_events_for_date(
+    service,
+    target_date: date,
+) -> list[dict]:
     start_of_day = datetime.combine(
-        now.date(),
+        target_date,
         time.min,
         tzinfo=MOSCOW_TIMEZONE,
     )
@@ -59,6 +61,7 @@ def get_today_events(service) -> list[dict]:
 
     return request.execute().get("items", [])
 
+
 def event_to_lesson(event: dict) -> Lesson | None:
     if "dateTime" not in event["start"]:
         return None
@@ -76,6 +79,7 @@ def event_to_lesson(event: dict) -> Lesson | None:
         is_paid=is_event_paid(event),
     )
 
+
 def events_to_lessons(events: list[dict]) -> list[Lesson]:
     lessons = []
 
@@ -86,34 +90,6 @@ def events_to_lessons(events: list[dict]) -> list[Lesson]:
 
     return lessons
 
+
 def is_event_paid(event: dict) -> bool:
     return event.get("colorId") == "2"
-
-def format_event(event: dict) -> str:
-    title = event.get("summary", "Без названия")
-
-    start = event["start"]["dateTime"]
-    end = event["end"]["dateTime"]
-
-    start_time = datetime.fromisoformat(start).strftime("%H:%M")
-    end_time = datetime.fromisoformat(end).strftime("%H:%M")
-
-    return f"{title}: {start_time} — {end_time}"
-
-def print_events(events: list[dict]) -> None:
-    if not events:
-        print("На сегодня уроков нет.")
-        return
-
-    for event in events:
-        print(format_event(event))
-
-
-credentials = get_credentials()
-service = build("calendar", "v3", credentials=credentials)
-events = get_today_events(service)
-# print_events(events)
-print(events)
-
-for event in events:
-    print(event.get("summary", "Без названия"), event.get("colorId"))
