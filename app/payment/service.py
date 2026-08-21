@@ -14,3 +14,10 @@ def get_lessons_to_check(
             lessons_to_check.append(lesson)
 
     return lessons_to_check
+
+def format_payment_question(lesson: Lesson) -> str:
+    return (
+        f"{lesson.title}\n"
+        f"{lesson.starts_at.strftime('%H:%M')} — {lesson.ends_at.strftime('%H:%M')}\n\n"
+        "Урок оплачен?"
+    )

@@ -2,12 +2,10 @@ from datetime import datetime
 
 from googleapiclient.discovery import build
 
-from app.calendar.list_events import (
-    MOSCOW_TIMEZONE,
-    events_to_lessons,
-    get_credentials,
-    get_events_for_date,
-)
+from app.calendar.auth import get_credentials
+from app.calendar.client import get_events_for_date
+from app.calendar.mapper import events_to_lessons
+from app.config.settings import MOSCOW_TIMEZONE
 from app.payment.service import get_lessons_to_check
 
 
