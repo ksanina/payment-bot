@@ -1,11 +1,15 @@
 from datetime import datetime
 
-from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.ext import ContextTypes
 
+from app.calendar.client import get_events_for_date, mark_event_as_paid
+from app.calendar.mapper import events_to_lessons
 from app.config.settings import MOSCOW_TIMEZONE, TELEGRAM_CHAT_ID
-from app.payment.models import Lesson
-from app.payment.service import format_payment_question
+from app.payment.service import (
+    format_payment_question,
+    get_lessons_to_check,
+)
 
 
 async def start(
@@ -35,29 +39,10 @@ async def send_payment_question(
     await bot.send_message(
         chat_id=TELEGRAM_CHAT_ID,
         text=text,
-        reply_markup=keyboard
+        reply_markup=keyboard,
+        parse_mode="HTML",
         )
 
-async def test_payment(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-) -> None:
-    if update.message is None:
-        return
-
-    lesson = Lesson(
-        event_id="test_event_id",
-        title="Тестовый урок",
-        starts_at=datetime(2026, 8, 21, 10, 0, tzinfo=MOSCOW_TIMEZONE),
-        ends_at=datetime(2026, 8, 21, 11, 0, tzinfo=MOSCOW_TIMEZONE),
-        is_paid=False,
-    )
-
-    await send_payment_question(
-        bot=context.bot,
-        chat_id=update.message.chat_id,
-        lesson=lesson,
-    )
 
 async def paid_button(
     update: Update,
@@ -74,4 +59,74 @@ async def paid_button(
     event_id = query.data.split(":", 1)[1]
 
     await query.answer()
-    print(event_id)
+
+    calendar_service = context.application.bot_data["calendar_service"]
+
+    mark_event_as_paid(
+        calendar_service,
+        event_id,
+    )
+
+    if not isinstance(query.message, Message):
+        return
+
+    text = query.message.text
+    if text is None:
+        return
+
+    # await query.edit_message_text(
+    #     f"✅ {text}"
+    # )
+
+    await query.delete_message()
+
+
+async def check_payments(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    calendar_service = context.application.bot_data["calendar_service"]
+
+    today = datetime.now(MOSCOW_TIMEZONE).date()
+
+    events = get_events_for_date(
+        calendar_service,
+        today,
+    )
+    lessons = events_to_lessons(events)
+
+    lessons_to_check = get_lessons_to_check(
+        lessons,
+        today,
+    )
+
+    for lesson in lessons_to_check:
+        await send_payment_question(
+            bot=context.bot,
+            chat_id=TELEGRAM_CHAT_ID,
+            lesson=lesson,
+        )
+
+async def daily_payment_check(
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    calendar_service = context.application.bot_data["calendar_service"]
+
+    today = datetime.now(MOSCOW_TIMEZONE).date()
+
+    events = get_events_for_date(
+        calendar_service,
+        today,
+    )
+    lessons = events_to_lessons(events)
+    lessons_to_check = get_lessons_to_check(
+        lessons,
+        today,
+    )
+
+    for lesson in lessons_to_check:
+        await send_payment_question(
+            bot=context.bot,
+            chat_id=TELEGRAM_CHAT_ID,
+            lesson=lesson,
+        )

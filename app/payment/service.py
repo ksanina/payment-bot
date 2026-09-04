@@ -1,4 +1,5 @@
 from datetime import date
+from html import escape
 
 from app.payment.models import Lesson
 
@@ -17,7 +18,6 @@ def get_lessons_to_check(
 
 def format_payment_question(lesson: Lesson) -> str:
     return (
-        f"{lesson.title}\n"
-        f"{lesson.starts_at.strftime('%H:%M')} — {lesson.ends_at.strftime('%H:%M')}\n\n"
-        "Урок оплачен?"
+        f"<b>{escape(lesson.title)}</b> | "
+        f"{lesson.starts_at.strftime('%H:%M')} — {lesson.ends_at.strftime('%H:%M')}"
     )

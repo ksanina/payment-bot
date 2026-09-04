@@ -27,3 +27,17 @@ def get_events_for_date(
     )
 
     return request.execute().get("items", [])
+
+def mark_event_as_paid(
+    service,
+    event_id: str,
+) -> None:
+    request = (
+        service.events().patch(
+            calendarId=GOOGLE_CALENDAR_ID,
+            eventId=event_id,
+            body={"colorId": "2"}
+        )
+    )
+
+    request.execute()

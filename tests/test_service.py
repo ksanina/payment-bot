@@ -59,7 +59,5 @@ def test_format_payment_question():
     question = format_payment_question(lesson)
 
     assert question == (
-        "Вика\n"
-        "11:00 — 12:00\n\n"
-        "Урок оплачен?"
+        "<b>Вика</b> | 11:00 — 12:00"
     )
