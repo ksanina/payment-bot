@@ -1,11 +1,18 @@
+from os import getenv
 from pathlib import Path
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-CREDENTIALS_FILE = PROJECT_ROOT / "credentials.json"
-TOKEN_FILE = PROJECT_ROOT / "token.json"
+
+CREDENTIALS_FILE = Path(
+    getenv("GOOGLE_CREDENTIALS_FILE", PROJECT_ROOT / "credentials.json")
+)
+
+TOKEN_FILE = Path(
+    getenv("GOOGLE_TOKEN_FILE", PROJECT_ROOT / "token.json")
+)
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar.events",
